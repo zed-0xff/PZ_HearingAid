@@ -23,6 +23,41 @@ local HA_BATTERY_LEVEL = "hearing_aid_battery_level";
 local HA_BATTERY_POWER_LEVEL = "hearing_aid_power_level";
 local HA_HAS_ALTERNATE_POWER = "hearing_aid_has_alternate_power";
 
+local function traitFromString(traitName)
+	if traitName == nil or traitName == "" then return nil end
+	if CharacterTrait == nil then return traitName end
+	if traitName == "Deaf" then return CharacterTrait.DEAF end
+	if traitName == "HardOfHearing" then return CharacterTrait.HARD_OF_HEARING end
+	if traitName == "KeenHearing" then return CharacterTrait.KEEN_HEARING end
+	return traitName
+end
+
+local function hasTraitCompat(player, traitName)
+	if player == nil or traitName == nil or traitName == "" then return false end
+	local trait = traitFromString(traitName)
+	if CharacterTrait ~= nil and player.hasTrait and trait ~= nil then
+		return player:hasTrait(trait)
+	end
+	local traits = player:getTraits()
+	return traits and traits.contains and traits:contains(traitName) or false
+end
+
+local function addTraitCompat(player, traitName)
+	if player == nil or traitName == nil or traitName == "" then return end
+	local trait = traitFromString(traitName)
+	local traits = player.getCharacterTraits and player:getCharacterTraits() or player:getTraits()
+	if traits == nil then return end
+	traits:add(trait)
+end
+
+local function removeTraitCompat(player, traitName)
+	if player == nil or traitName == nil or traitName == "" then return end
+	local trait = traitFromString(traitName)
+	local traits = player.getCharacterTraits and player:getCharacterTraits() or player:getTraits()
+	if traits == nil then return end
+	traits:remove(trait)
+end
+
 local function isWorkingHearingAid(item)
 	local fullType = item:getFullType();
 	for _, workingType in ipairs(HA_WORKING_FULL_TYPES) do
@@ -60,7 +95,11 @@ local function initializeHearingAid(itemID, playerID, item)
 	HearingAidManager.managers[itemID]:initialize();
 end
 
-local function createMenuHearingAid(playerID, context, items)
+local function createMenuHearingAid(playerIDOrObj, context, items)
+	local playerID = playerIDOrObj
+	if playerIDOrObj ~= nil and type(playerIDOrObj) ~= "number" and playerIDOrObj.getPlayerNum then
+		playerID = playerIDOrObj:getPlayerNum()
+	end
 	-- print(string.format("HearingAid: createMenuHearingAid: playerID=%s, context=%s, items=%s", tostring(playerID), tostring(context), tostring(items)));
 	for i, e in ipairs(items) do
         local item;
@@ -95,40 +134,39 @@ local function onActivate(_, playerID, item, manager)
 	HearingAidManager.activeManagers[buildActiveIndex(player)] = manager;
 	local handleDeafness = SandboxVars.HearingAid.HandleDeafness;
 	local isBoosted = item:getFullType() == "hearing_aid.BoostedHearingAid";
-    local traits = player:getTraits();
 	local modData = item:getModData();
 	-- print(string.format("HearingAid: onActivate: modData=%s, changedTraits=%s", tostring(modData), tostring(modData[HA_CHANGED_TRAITS])));
 	modData[HA_CHANGED_TRAITS] = nil;
-    if traits:contains("Deaf") then
+	if hasTraitCompat(player, "Deaf") then
 		if handleDeafness == 2 then
-			traits:remove("Deaf");
+			removeTraitCompat(player, "Deaf");
 			if isBoosted then
 				modData[HA_CHANGED_TRAITS] = {"Deaf", ""};
 			else
 				modData[HA_CHANGED_TRAITS] = {"Deaf", "HardOfHearing"};
-				traits:add("HardOfHearing");
+				addTraitCompat(player, "HardOfHearing");
 			end
 		elseif handleDeafness == 3 then
 			if isBoosted then
 				modData[HA_CHANGED_TRAITS] = {"Deaf", "HardOfHearing"};
-				traits:remove("Deaf");
-				traits:add("HardOfHearing");
+				removeTraitCompat(player, "Deaf");
+				addTraitCompat(player, "HardOfHearing");
 			end
 		end
-	elseif traits:contains("HardOfHearing") then
-		traits:remove("HardOfHearing");
+	elseif hasTraitCompat(player, "HardOfHearing") then
+		removeTraitCompat(player, "HardOfHearing");
 		if isBoosted then
 			modData[HA_CHANGED_TRAITS] = {"HardOfHearing", "KeenHearing"};
-			traits:add("KeenHearing");
+			addTraitCompat(player, "KeenHearing");
 		else
 			modData[HA_CHANGED_TRAITS] = {"HardOfHearing", ""};
 		end
-	elseif traits:contains("KeenHearing") then
+	elseif hasTraitCompat(player, "KeenHearing") then
 		-- Congrats! You already have great hearing.
 	else
 		if isBoosted then
 			modData[HA_CHANGED_TRAITS] = {"", "KeenHearing"};
-			traits:add("KeenHearing");
+			addTraitCompat(player, "KeenHearing");
 		else
 			modData[HA_CHANGED_TRAITS] = {"", ""};
 		end
@@ -151,12 +189,11 @@ local function onDeactivate(_, playerID, item, manager)
 			-- I think it's possible for this to happen if a player dies while wearing this
 			error("HearingAid for " .. buildActiveIndex(activePlayer) .. " deactivated on " .. buildActiveIndex(player));
 		end
-		local traits = activePlayer:getTraits();
 		if addedTrait ~= "" then
-			traits:remove(addedTrait);
+			removeTraitCompat(activePlayer, addedTrait);
 		end
 		if removedTrait ~= "" then
-			traits:add(removedTrait);
+			addTraitCompat(activePlayer, removedTrait);
 		end
 	end
 end

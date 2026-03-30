@@ -1,5 +1,5 @@
-name=Hearing Aid
+name=Hearing Aid B42
 id=cf_hearing_aid
 description=Adds a wearable hearing aid.
 poster=poster.png
-url=https://github.com/CalebFenton/PZ_HearingAid
+url=https://github.com/zed-0xff/PZ_HearingAid
