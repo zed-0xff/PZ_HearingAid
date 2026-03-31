@@ -250,7 +250,7 @@ function HearingAidManager:doActionMenu(context)
 end
 
 local function predicateNotEmpty(item)
-	return item:getUsedDelta() > 0
+	return item:getCurrentUsesFloat() > 0
 end
 
 function HearingAidManager:doBatteryMenu(context)
@@ -266,7 +266,7 @@ function HearingAidManager:doBatteryMenu(context)
 			local batteries = self:getPlayer():getInventory():getAllTypeEvalRecurse("Battery", predicateNotEmpty);
 			for i = 0, batteries:size() - 1 do
 				battery = batteries:get(i);
-				batteryLevel = math.floor(battery:getUsedDelta() * 100);
+				batteryLevel = math.floor(battery:getCurrentUsesFloat() * 100);
 				if batteryLevel > 0 then
 					subcontext:addOption(battery:getName() .. " (" .. batteryLevel .. "%)", self, HearingAidManager.doAction, "AddBattery", battery);
 					addedSubmenu = true;
@@ -320,7 +320,7 @@ end
 
 function HearingAidManager:addBattery(battery)
 	self.item:getModData()[HA_HAS_BATTERY] = true;
-	self.item:getModData()[HA_BATTERY_LEVEL] = battery:getUsedDelta();
+	self.item:getModData()[HA_BATTERY_LEVEL] = battery:getCurrentUsesFloat();
 	self.item:setActualWeight(self.itemWeightWithBattery);
 	self.item:setCustomWeight(true);
 	self:getPlayer():getInventory():DoRemoveItem(battery);
@@ -337,8 +337,8 @@ end
 -- end
 
 function HearingAidManager:removeBattery()
-	local battery = InventoryItemFactory.CreateItem("Base.Battery");
-	battery:setUsedDelta(self.item:getModData()[HA_BATTERY_LEVEL]);
+	local battery = instanceItem("Base.Battery");
+	battery:setCurrentUsesFloat(self.item:getModData()[HA_BATTERY_LEVEL]);
 	self:getPlayer():getInventory():AddItem(battery);
 	self.item:getModData()[HA_HAS_BATTERY] = false;
 	self.item:getModData()[HA_BATTERY_LEVEL] = 0;
@@ -441,8 +441,8 @@ HearingAidManager.DismantleHearingAid = function(items, result, player)
 	for i=1, items:size() do
 		local item = items:get(i-1);
 		if isWorkingHearingAid(item) and item:getModData()[HA_HAS_BATTERY] == true then
-			local battery = InventoryItemFactory.CreateItem("Base.Battery");
-			battery:setUsedDelta(item:getModData()[HA_BATTERY_LEVEL]);
+			local battery = instanceItem("Base.Battery");
+			battery:setCurrentUsesFloat(item:getModData()[HA_BATTERY_LEVEL]);
 			player:getInventory():AddItem(battery);
 			break
 		end
