@@ -1,6 +1,7 @@
 version=1
+id=3697034338
 title=Hearing Aid B42.13+
-description=(fork of https://steamcommunity.com/sharedfiles/filedetails/?id=2931424726)
+description=(fork of https://steamcommunity.com/sharedfiles/filedetails/?id=2931424725)
 description=
 description=This adds an upgradable hearing aid.
 description=
@@ -15,5 +16,5 @@ description=
 description=The boosted variant can be crafted with very high electrical skill and less common components. If you are deaf, this will give you normal hearing. If you are hard of hearing or have normal hearing already, this will give you keen hearing.
 description=
 description=https://github.com/zed-0xff/PZ_HearingAid
-tags=Build 42;Clothing/Armor;Items
+tags=Build 42;Audio;Clothing/Armor;Hardmode;Items;Realistic
 visibility=public
