@@ -25,18 +25,6 @@ function HearingAidAction:perform()
 	ISBaseTimedAction.perform(self)
 end
 
-function HearingAidAction:isValidActivate()
-	if self.doAction and self.manager then
-		return (not self.manager:isActive()) and (self.manager:hasBattery() and self.manager:hasPower() or self.manager:hasAlternatePower()) or false;
-	end;
-end
-
-function HearingAidAction:performActivate()
-	if self:isValidActivate() then
-		self.manager:activate();
-	end
-end
-
 function HearingAidAction:isValidAddBattery()
 	if self.doAction and self.manager and self.item then
 		return (not self.manager:hasBattery());
@@ -47,19 +35,6 @@ end
 function HearingAidAction:performAddBattery()
 	if self:isValidAddBattery() and self.item then
 		self.manager:addBattery(self.item);
-	end
-end
-
-function HearingAidAction:isValidDeactivate()
-	if self.doAction and self.manager then
-		return self.manager:isActive() or false;
-	end
-	return false;
-end
-
-function HearingAidAction:performDeactivate()
-	if self:isValidDeactivate() then
-		self.manager:deactivate();
 	end
 end
 
@@ -75,16 +50,6 @@ function HearingAidAction:performRemoveBattery()
 		self.manager:removeBattery();
 	end
 end
-
--- function HearingAidAction:isValidSetPowerLevel()
--- 	return self.manager and true or false;
--- end
-
--- function HearingAidAction:performSetPowerLevel()
--- 	if self.manager and self.arg1 then
--- 		self.manager:setPowerLevel(self.arg1);
--- 	end
--- end
 
 function HearingAidAction:update()
 
