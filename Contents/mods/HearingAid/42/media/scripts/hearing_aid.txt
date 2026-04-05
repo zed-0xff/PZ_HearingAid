@@ -13,139 +13,156 @@ module hearing_aid
 
 	item BrokenHearingAid
 	{
-		DisplayName		    =			Broken Hearing Aid,
-		Icon			    =			HearingAid_Broken,
-		WorldStaticModel	=           HearingAid,
-		ScaleWorldIcon		=			0.3,
-		Type	    		=			Clothing,
-		DisplayCategory		=			Accessory,
-		ClothingItem		=			HearingAid,
-		Cosmetic			=			true,
-		Weight	    		=			0.1,
-		BodyLocation    	=			Ears,
-		CanHaveHoles    	=			false,
-		RemoveOnBroken		=			false,
-		ChanceToFall		=			5,
-		MetalValue	    	=			1,
+		DisplayName      = Broken Hearing Aid,
+		Icon             = HearingAid_Broken,
+		WorldStaticModel = HearingAid,
+		ScaleWorldIcon   = 0.3,
+		Type             = Clothing,
+		DisplayCategory  = Accessory,
+		ClothingItem     = HearingAid,
+		Cosmetic         = true,
+		Weight           = 0.1,
+		BodyLocation     = Ears,
+		CanHaveHoles     = false,
+		RemoveOnBroken   = false,
+		ChanceToFall     = 5,
+		MetalValue       = 1,
 	}
 
 	item InefficientHearingAid
 	{
-		DisplayName		    =			Hearing Aid,
-		Icon			    =			HearingAid,
-		WorldStaticModel	=           HearingAid,
-		ScaleWorldIcon		=			0.3,
-		Type	    		=			Clothing,
-		DisplayCategory		=			Accessory,
-		ClothingItem		=			HearingAid,
-		Weight	    		=			0.1,
-		BodyLocation    	=			Ears,
-		CanHaveHoles    	=			false,
-		RemoveOnBroken		=			false,
-		ChanceToFall		=			5,
-		MetalValue	    	=			1,
+		DisplayName      = Hearing Aid,
+		Icon             = HearingAid,
+		WorldStaticModel = HearingAid,
+		ScaleWorldIcon   = 0.3,
+		Type             = Clothing,
+		DisplayCategory  = Accessory,
+		ClothingItem     = HearingAid,
+		Weight           = 0.1,
+		BodyLocation     = Ears,
+		CanHaveHoles     = false,
+		RemoveOnBroken   = false,
+		ChanceToFall     = 5,
+		MetalValue       = 1,
 	}
 
 	item EfficientHearingAid
 	{
-		DisplayName		    =			Efficient Hearing Aid,
-		Icon			    =			HearingAid,
-		WorldStaticModel	=           HearingAid,
-		ScaleWorldIcon		=			0.3,
-		Type	    		=			Clothing,
-		DisplayCategory		=			Accessory,
-		ClothingItem		=			HearingAid,
-		Weight	    		=			0.1,
-		BodyLocation    	=			Ears,
-		CanHaveHoles    	=			false,
-		RemoveOnBroken		=			false,
-		ChanceToFall		=			5,
-		MetalValue	    	=			1,
+		DisplayName      = Efficient Hearing Aid,
+		Icon             = HearingAid,
+		WorldStaticModel = HearingAid,
+		ScaleWorldIcon   = 0.3,
+		Type             = Clothing,
+		DisplayCategory  = Accessory,
+		ClothingItem     = HearingAid,
+		Weight           = 0.1,
+		BodyLocation     = Ears,
+		CanHaveHoles     = false,
+		RemoveOnBroken   = false,
+		ChanceToFall     = 5,
+		MetalValue       = 1,
 	}
 
 	item BoostedHearingAid
 	{
-		DisplayName		    =			Boosted Hearing Aid,
-		Icon			    =			HearingAid,
-		WorldStaticModel	=           HearingAid,
-		ScaleWorldIcon		=			0.3,
-		Type	    		=			Clothing,
-		DisplayCategory		=			Accessory,
-		ClothingItem		=			HearingAid,
-		Weight	    		=			0.1,
-		BodyLocation    	=			Ears,
-		CanHaveHoles    	=			false,
-		RemoveOnBroken		=			false,
-		ChanceToFall		=			5,
-		MetalValue	    	=			1,
+		DisplayName      = Boosted Hearing Aid,
+		Icon             = HearingAid,
+		WorldStaticModel = HearingAid,
+		ScaleWorldIcon   = 0.3,
+		Type             = Clothing,
+		DisplayCategory  = Accessory,
+		ClothingItem     = HearingAid,
+		Weight           = 0.1,
+		BodyLocation     = Ears,
+		CanHaveHoles     = false,
+		RemoveOnBroken   = false,
+		ChanceToFall     = 5,
+		MetalValue       = 1,
 	}
 
-	recipe Dismantle Hearing Aid
-	{
-		BrokenHearingAid/InefficientHearingAid/EfficientHearingAid/BoostedHearingAid,
-		keep [Recipe.GetItemTypes.Screwdriver],
+    craftRecipe Dismantle Hearing Aid
+    {
+        timedAction = DismantleElectrical,
+        time        = 60,
+        OnCreate    = RecipeCodeOnCreate.dismantleMiscElectronics,
+        Tags        = InHandCraft;Electrical,
+        category    = Electrical,
+        xpAward     = Electricity:2,
 
-		Result:ElectronicsScrap,
-		Time:30.0,
-		OnTest:Recipe.OnTest.DismantleElectronics,
-		OnCreate:HearingAidManager.DismantleHearingAid,
-		OnGiveXP:Recipe.OnGiveXP.DismantleElectronics,
-		Category:Electrical,
-		AnimNode:Disassemble,
-		Prop1:Screwdriver,
-		Sound:Dismantle,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[NoBrokenItems],
+            item 1 [hearing_aid.BrokenHearingAid;hearing_aid.InefficientHearingAid;hearing_aid.EfficientHearingAid;hearing_aid.BoostedHearingAid] flags[ItemCount;ResearchInput] mode:destroy,
+        }
+        outputs
+        {
+            item 1 Base.ElectronicsScrap,
+            item 1 Base.Amplifier,
+        }
+    }
+
+    craftRecipe Repair Hearing Aid
+    {
+        timedAction   = MakingElectrical,
+        time          = 100,
+        SkillRequired = Electricity:2,
+        Tags          = AnySurfaceCraft,
+        category      = Electrical,
+        xpAward       = Electricity:10,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[Prop1],
+            item 1 [hearing_aid.BrokenHearingAid],
+            item 1 [Base.ElectronicsScrap],
+        }
+        outputs
+        {
+            item 1 hearing_aid.InefficientHearingAid,
+        }
+    }
+
+	craftRecipe Optimize Hearing Aid
+	{
+        timedAction   = MakingElectrical,
+        time          = 100,
+        SkillRequired = Electricity:4,
+        Tags          = AnySurfaceCraft,
+        category      = Electrical,
+        xpAward       = Electricity:10,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[Prop1],
+            item 1 [hearing_aid.InefficientHearingAid],
+            item 2 [Base.ElectronicsScrap],
+            item 1 [Base.Aluminum],
+        }
+        outputs
+        {
+            item 1 hearing_aid.EfficientHearingAid,
+        }
 	}
 
-	recipe Repair Hearing Aid
+	craftRecipe Boost Hearing Aid
 	{
-		BrokenHearingAid,
-		ElectronicsScrap,
-		keep [Recipe.GetItemTypes.Screwdriver],
-
-		SkillRequired:Electricity=2,
-		Result:InefficientHearingAid,
-		Time:60.0,
-		OnGiveXP:Recipe.OnGiveXP.DismantleElectronics,
-		Category:Electrical,
-		AnimNode:Disassemble,
-		Prop1:Screwdriver,
-	}
-
-	recipe Optimize Hearing Aid
-	{
-		InefficientHearingAid,
-		ElectronicsScrap=2,
-		Aluminum,
-		keep [Recipe.GetItemTypes.Screwdriver],
-
-		SkillRequired:Electricity=4,
-		Result:EfficientHearingAid,
-		Time:80.0,
-		OnCreate:HearingAidManager.DismantleHearingAid,
-		OnGiveXP:Recipe.OnGiveXP.DismantleElectronics,
-		Category:Electrical,
-		AnimNode:Disassemble,
-		Prop1:Screwdriver,
-	}
-
-	recipe Boost Hearing Aid
-	{
-		EfficientHearingAid,
-		ElectronicsScrap=4,
-		Earbuds,
-		Amplifier,
-		Radio.ElectricWire,
-		keep [Recipe.GetItemTypes.Screwdriver],
-		keep Scalpel,
-
-		SkillRequired:Electricity=8,
-		Result:BoostedHearingAid,
-		Time:120.0,
-		OnTest:HearingAidManager.IsBoostValid,
-		OnCreate:HearingAidManager.DismantleHearingAid,
-		OnGiveXP:Recipe.OnGiveXP.DismantleElectronics,
-		Category:Electrical,
-		AnimNode:Disassemble,
-		Prop1:Screwdriver,
+        timedAction   = MakingElectrical,
+        time          = 200,
+        SkillRequired = Electricity:8,
+        Tags          = AnySurfaceCraft,
+        category      = Electrical,
+        xpAward       = Electricity:20,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[Prop1],
+            item 1 [Base.Scalpel] mode:keep,
+            item 1 [hearing_aid.EfficientHearingAid],
+            item 4 [Base.ElectronicsScrap],
+            item 1 [Base.Earbuds],
+            item 1 [Base.Amplifier],
+            item 1 [Base.ElectricWire],
+        }
+        outputs
+        {
+            item 1 hearing_aid.BoostedHearingAid,
+        }
 	}
 }
