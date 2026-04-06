@@ -49,7 +49,7 @@ HearingAidInventoryTooltip.doOverride = function()
 		callback_ISToolTipInv_render(self);
 		if not ISContextMenu.instance or not ISContextMenu.instance.visibleCheck then
 			local itemObj = self.item;
-			if itemObj then
+			if itemObj and itemObj.getFullType then
 				local drawItem = HearingAidInventoryTooltip.drawForItems[itemObj:getFullType()];
 				if drawItem then
 					local font = getCore():getOptionTooltipFont();
