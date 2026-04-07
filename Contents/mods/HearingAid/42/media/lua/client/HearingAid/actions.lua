@@ -27,7 +27,7 @@ end
 
 function HearingAidAction:isValidAddBattery()
 	if self.doAction and self.manager and self.item then
-		return (not self.manager:hasBattery());
+		return (not self.manager:hasPower());
 	end
 	return false;
 end
