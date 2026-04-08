@@ -215,7 +215,6 @@ local function initHearingAid()
 	-- print("HearingAid: initHearingAid");
 	for _, workingType in ipairs(HA_WORKING_FULL_TYPES) do
 		HearingAidInventoryBar.registerItem(workingType, HA_BATTERY_LEVEL, getTextOrNull("IGUI_invpanel_Remaining") or "Remaining: ");
-		HearingAidInventoryTooltip.registerItem(workingType, HA_BATTERY_LEVEL, getTextOrNull("IGUI_invpanel_Remaining") or "Remaining: ");
 	end
 
 	Events.OnFillInventoryObjectContextMenu.Add(createMenuHearingAid);
