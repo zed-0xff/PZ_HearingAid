@@ -18,7 +18,6 @@ local HA_ACTIVE = "hearing_aid_battery_active";
 local HA_ACTIVE_TIME = "hearing_aid_battery_active_time";
 local HA_INITIALIZED = "hearing_aid_battery_initialized";
 local HA_BATTERY_MANAGER_VERSION = "hearing_aid_battery_version";
-local HA_HAS_BATTERY = "hearing_aid_has_battery";
 local HA_BATTERY_LEVEL = "hearing_aid_battery_level";
 
 local function traitFromString(traitName)
@@ -74,6 +73,36 @@ local function getItemID(item)
 	return item:getType() .. item:getID();
 end
 
+local function getCharge(item)
+	local modData = item and item.getModData and item:getModData() or nil
+	if modData == nil then return 0 end
+	return modData[HA_BATTERY_LEVEL] or 0
+end
+
+local function setCharge(item, value)
+	if value == nil then value = 0 end
+	if value < 0 then value = 0 end
+	if value > 1 then value = 1 end
+	local modData = item and item.getModData and item:getModData() or nil
+	if modData ~= nil then
+		modData[HA_BATTERY_LEVEL] = value
+	end
+end
+
+local function stripChargeSuffix(name)
+	if name == nil then return nil end
+	return tostring(name):gsub("%s*%(%d+%%%)[%s]*$", "")
+end
+
+local function updateItemDisplayName(item, baseName, charge)
+	if item == nil or item.setName == nil then return end
+	local cleanBase = stripChargeSuffix(baseName or item:getName() or "")
+	local percent = math.floor((charge or 0) * 100 + 0.5)
+	if percent < 0 then percent = 0 end
+	if percent > 100 then percent = 100 end
+	item:setName(string.format("%s (%d%%)", cleanBase, percent))
+end
+
 local function initializeHearingAid(itemID, playerID, item)
 	-- print(string.format("HearingAid: initializeHearingAid: itemID=%s, playerID=%s, item=%s", tostring(itemID), tostring(playerID), tostring(item)));
 	local runTime = 400;
@@ -83,6 +112,7 @@ local function initializeHearingAid(itemID, playerID, item)
 	local hearingAid = {
 		playerID = playerID,
 		item = item,
+		baseDisplayName = stripChargeSuffix(item:getName()),
 		runTime = runTime,
 		target = nil,
 		adjustablePower = false,
@@ -213,10 +243,6 @@ end
 
 local function initHearingAid()
 	-- print("HearingAid: initHearingAid");
-	for _, workingType in ipairs(HA_WORKING_FULL_TYPES) do
-		HearingAidInventoryBar.registerItem(workingType, HA_BATTERY_LEVEL, getTextOrNull("IGUI_invpanel_Remaining") or "Remaining: ");
-	end
-
 	Events.OnFillInventoryObjectContextMenu.Add(createMenuHearingAid);
 	Events.OnPlayerUpdate.Add(ensureWornHearingAidManagers);
 end
@@ -282,16 +308,16 @@ function HearingAidManager:isActive()
 end
 
 function HearingAidManager:hasPower()
-	return self.item:getModData()[HA_BATTERY_LEVEL] > 0 or false;
+	return getCharge(self.item) > 0;
 end
 
 function HearingAidManager:hasBattery()
-	return self.item:getModData()[HA_HAS_BATTERY] or false;
+	return self:hasPower();
 end
 
 function HearingAidManager:addBattery(battery)
-	self.item:getModData()[HA_HAS_BATTERY] = true;
-	self.item:getModData()[HA_BATTERY_LEVEL] = battery:getCurrentUsesFloat();
+	setCharge(self.item, battery:getCurrentUsesFloat());
+	updateItemDisplayName(self.item, self.baseDisplayName, getCharge(self.item))
 	self.item:setActualWeight(self.itemWeightWithBattery);
 	self.item:setCustomWeight(true);
 	self:getPlayer():getInventory():DoRemoveItem(battery);
@@ -299,10 +325,10 @@ end
 
 function HearingAidManager:removeBattery()
 	local battery = instanceItem("Base.Battery");
-	battery:setCurrentUsesFloat(self.item:getModData()[HA_BATTERY_LEVEL]);
+	battery:setCurrentUsesFloat(getCharge(self.item));
 	self:getPlayer():getInventory():AddItem(battery);
-	self.item:getModData()[HA_HAS_BATTERY] = false;
-	self.item:getModData()[HA_BATTERY_LEVEL] = 0;
+	setCharge(self.item, 0);
+	updateItemDisplayName(self.item, self.baseDisplayName, getCharge(self.item))
 	self.item:setActualWeight(self.itemWeightNoBattery);
 	self.item:setCustomWeight(true);
 	self:deactivate();
@@ -333,7 +359,7 @@ function HearingAidManager:update()
 	end
 	if not isValid then return end
 	if self:isActive() then
-		local batteryLevel = self.item:getModData()[HA_BATTERY_LEVEL] or 0;
+		local batteryLevel = getCharge(self.item);
 		local reductionThisFrame = 0;
 
 		local isPaused = UIManager.getSpeedControls() and UIManager.getSpeedControls():getCurrentGameSpeed() == 0;
@@ -350,7 +376,8 @@ function HearingAidManager:update()
 				self.item:getModData()[HA_ACTIVE] = false;
 				onBatteryDead(self.target, self.playerID, self.item, self);
 			end
-			self.item:getModData()[HA_BATTERY_LEVEL] = batteryLevel;
+			setCharge(self.item, batteryLevel);
+			updateItemDisplayName(self.item, self.baseDisplayName, batteryLevel)
 			self.item:getModData()[HA_ACTIVE_TIME] = worldTime;
 			-- print("activeTime " ..activeTime);
 			-- print("worldTime " ..worldTime);
@@ -370,20 +397,23 @@ function HearingAidManager:initialize()
 	local alreadyInitialized = modData[HA_INITIALIZED];
 	local shouldUpgrade = not modData[HA_BATTERY_MANAGER_VERSION] or modData[HA_BATTERY_MANAGER_VERSION] < versionNumber;
 	if not alreadyInitialized or shouldUpgrade then
-		-- May have had battery when upgrading
-		local hadBattery = modData[HA_HAS_BATTERY];
-		local hasBattery = hadBattery or (alreadyInitialized and ZombRandBetween(0, 10) < 2);
+		if not alreadyInitialized then
+			-- New items start with a small chance to have partial charge.
+			setCharge(self.item, (ZombRandBetween(0, 10) < 2) and (ZombRandBetween(0, 10) / 10) or 0)
+		end
 		modData[HA_BATTERY_MANAGER_VERSION] = versionNumber;
 		modData[HA_ACTIVE] = false;
-		modData[HA_HAS_BATTERY] = hasBattery;
-		modData[HA_BATTERY_LEVEL] = (hadBattery and 1) or (hasBattery and (ZombRandBetween(0, 10) / 10));
 		modData[HA_INITIALIZED] = true;
 	end
-	if self:hasBattery() then
+	if modData[HA_BATTERY_LEVEL] == nil then
+		setCharge(self.item, (ZombRandBetween(0, 10) < 2) and (ZombRandBetween(0, 10) / 10) or 0)
+	end
+	if self:hasPower() then
 		self.item:setActualWeight(self.itemWeightWithBattery);
 	else
 		self.item:setActualWeight(self.itemWeightNoBattery);
 	end
+	updateItemDisplayName(self.item, self.baseDisplayName, getCharge(self.item))
 	self.item:setCustomWeight(true);
 	-- Keep manager updating all the time so auto-activation/deactivation can work.
 	self:addToUIManager();
@@ -402,9 +432,9 @@ end
 HearingAidManager.DismantleHearingAid = function(items, result, player)
 	for i=1, items:size() do
 		local item = items:get(i-1);
-		if isWorkingHearingAid(item) and item:getModData()[HA_HAS_BATTERY] == true then
+		if isWorkingHearingAid(item) and getCharge(item) > 0 then
 			local battery = instanceItem("Base.Battery");
-			battery:setCurrentUsesFloat(item:getModData()[HA_BATTERY_LEVEL]);
+			battery:setCurrentUsesFloat(getCharge(item));
 			player:getInventory():AddItem(battery);
 			break
 		end
